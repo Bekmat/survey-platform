@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h1>{{ survey.title }}</h1>
+  <form method="post">
+    {% for q in survey.questions %}
+      <div class="mb-3">
+        <label class="form-label">{{ loop.index }}. {{ q }}</label>
+        <input class="form-control" name="q{{ loop.index0 }}" autocomplete="off">
+      </div>
+    {% endfor %}
+    <button class="btn btn-success" type="submit">Отправить</button>
+  </form>
+{% endblock %}

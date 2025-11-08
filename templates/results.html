@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h1>Результаты: {{ survey.title }}</h1>
+  <div class="mb-3">
+    <a class="btn btn-outline-success" href="{{ url_for('download_excel', survey_id=survey_id) }}">Скачать Excel</a>
+    <a class="btn btn-secondary ms-2" href="{{ url_for('index') }}">Назад</a>
+  </div>
+
+  <h5>Таблица ответов</h5>
+  <div class="table-responsive">
+    {{ table_html | safe }}
+  </div>
+
+  <h5 class="mt-4">Соответствие колонок</h5>
+  <ul>
+    {% for k, v in q_map.items() %}
+      <li><strong>{{ k }}</strong> — {{ v }}</li>
+    {% endfor %}
+  </ul>
+{% endblock %}
