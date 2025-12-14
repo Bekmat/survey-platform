@@ -1,19 +1,184 @@
 {% extends 'base.html' %} {% block content %}
 <h1>Создать опрос</h1>
-<form method="post">
+<form method="post" id="surveyForm">
   <div class="mb-3">
     <label class="form-label">Название опроса</label>
     <input class="form-control" name="title" required />
   </div>
-  <div class="mb-3">
-    <label class="form-label">Вопросы (по одному в строке)</label>
-    <textarea
-      class="form-control"
-      name="questions"
-      rows="8"
-      placeholder="Например: Как вы оцениваете курс? Что понравилось? Что можно улучшить?"
-    ></textarea>
+  <div id="questionsContainer">
+    <div class="question-block mb-3 border p-3">
+      <h5>Вопрос 1</h5>
+      <div class="mb-2">
+        <label>Текст вопроса</label>
+        <input class="form-control" name="questions[0][text]" required />
+      </div>
+      <div class="mb-2">
+        <label>Тип вопроса</label>
+        <select
+          class="form-select"
+          name="questions[0][type]"
+          onchange="toggleOptions(0)"
+        >
+          <option value="text">Текст (свободный ответ)</option>
+          <option value="radio">Один вариант (радио)</option>
+          <option value="checkbox">Несколько вариантов (чекбоксы)</option>
+        </select>
+      </div>
+      <div class="mb-2 options-container" id="options-0" style="display: none">
+        <label>Варианты ответов</label>
+        <div id="options-list-0">
+          <div class="input-group mb-2">
+            <input
+              class="form-control"
+              name="questions[0][options][0]"
+              placeholder="Вариант 1"
+            />
+            <button
+              type="button"
+              class="btn btn-outline-danger"
+              onclick="removeOption(0, 0)"
+            >
+              Удалить
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          onclick="addOption(0)"
+        >
+          Добавить вариант
+        </button>
+      </div>
+    </div>
+  </div>
+  <button type="button" class="btn btn-secondary mb-3" onclick="addQuestion()">
+    <i class="fas fa-plus"></i> Добавить вопрос
+  </button>
+  <div class="mb-3 form-check">
+    <input
+      class="form-check-input"
+      type="checkbox"
+      name="is_template"
+      id="is_template"
+    />
+    <label class="form-check-label" for="is_template">
+      Сохранить как шаблон (не активный опрос)
+    </label>
   </div>
   <button class="btn btn-primary" type="submit">Создать</button>
 </form>
+
+<script>
+  let questionCount = 1;
+
+  function addQuestion() {
+    const container = document.getElementById("questionsContainer");
+    const questionBlock = document.createElement("div");
+    questionBlock.className = "question-block mb-3 border p-3";
+    questionBlock.innerHTML = `
+    <h5>Вопрос ${questionCount + 1}</h5>
+    <div class="mb-2">
+      <label>Текст вопроса</label>
+      <input class="form-control" name="questions[${questionCount}][text]" required />
+    </div>
+    <div class="mb-2">
+      <label>Тип вопроса</label>
+      <select class="form-select" name="questions[${questionCount}][type]" onchange="toggleOptions(${questionCount})">
+        <option value="text">Текст (свободный ответ)</option>
+        <option value="radio">Один вариант (радио)</option>
+        <option value="checkbox">Несколько вариантов (чекбоксы)</option>
+      </select>
+    </div>
+    <div class="mb-2 options-container" id="options-${questionCount}" style="display: none;">
+      <label>Варианты ответов</label>
+      <div id="options-list-${questionCount}">
+        <div class="input-group mb-2">
+          <input class="form-control" name="questions[${questionCount}][options][0]" placeholder="Вариант 1" />
+          <button type="button" class="btn btn-outline-danger" onclick="removeOption(${questionCount}, 0)">Удалить</button>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addOption(${questionCount})">Добавить вариант</button>
+    </div>
+    <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)"><i class="fas fa-trash"></i> Удалить вопрос</button>
+  `;
+    container.appendChild(questionBlock);
+    questionCount++;
+  }
+
+  function toggleOptions(index) {
+    const select = document.querySelector(
+      `select[name="questions[${index}][type]"]`
+    );
+    const optionsDiv = document.getElementById(`options-${index}`);
+    if (select.value === "radio" || select.value === "checkbox") {
+      optionsDiv.style.display = "block";
+    } else {
+      optionsDiv.style.display = "none";
+    }
+  }
+
+  function addOption(questionIndex) {
+    const list = document.getElementById(`options-list-${questionIndex}`);
+    const optionCount = list.children.length;
+    const optionDiv = document.createElement("div");
+    optionDiv.className = "input-group mb-2";
+    optionDiv.innerHTML = `
+      <input class="form-control" name="questions[${questionIndex}][options][${optionCount}]" placeholder="Вариант ${
+      optionCount + 1
+    }" />
+      <button type="button" class="btn btn-outline-danger" onclick="removeOption(${questionIndex}, ${optionCount})">Удалить</button>
+    `;
+    list.appendChild(optionDiv);
+  }
+
+  function removeOption(questionIndex, optionIndex) {
+    const list = document.getElementById(`options-list-${questionIndex}`);
+    const options = list.children;
+    if (options.length > 1) {
+      list.removeChild(options[optionIndex]);
+      // Переименовать оставшиеся
+      for (let i = 0; i < options.length; i++) {
+        const input = options[i].querySelector("input");
+        if (input) {
+          input.name = `questions[${questionIndex}][options][${i}]`;
+        }
+        const button = options[i].querySelector("button");
+        if (button) {
+          button.setAttribute(
+            "onclick",
+            `removeOption(${questionIndex}, ${i})`
+          );
+        }
+      }
+    }
+  }
+
+  function removeQuestion(button) {
+    button.parentElement.remove();
+    questionCount--;
+    // Переименовать оставшиеся вопросы
+    const blocks = document.querySelectorAll(".question-block");
+    blocks.forEach((block, index) => {
+      block.querySelector("h5").textContent = `Вопрос ${index + 1}`;
+      const inputs = block.querySelectorAll("input, select, textarea");
+      inputs.forEach((input) => {
+        const name = input.name;
+        if (name) {
+          input.name = name.replace(/\[\d+\]/, `[${index}]`);
+        }
+      });
+      const optionsDiv = block.querySelector(".options-container");
+      if (optionsDiv) {
+        optionsDiv.id = `options-${index}`;
+        const select = block.querySelector("select");
+        select.setAttribute("onchange", `toggleOptions(${index})`);
+      }
+      const optionsList = block.querySelector('[id^="options-list-"]');
+      if (optionsList) {
+        optionsList.id = `options-list-${index}`;
+      }
+    });
+  }
+</script>
 {% endblock %}

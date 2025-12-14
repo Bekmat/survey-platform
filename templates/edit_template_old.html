@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h1>Редактировать шаблон</h1>
+  
+  <form id="surveyForm" method="post">
+    <div class="mb-3">
+      <label class="form-label">Тема опроса *</label>
+      <input class="form-control" name="topic" value="{{ survey.topic }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Название опроса *</label>
+      <input class="form-control" name="title" value="{{ survey.title }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Описание</label>
+      <textarea class="form-control" name="description" rows="3">{{ survey.description }}</textarea>
+    </div>
+
+    <div class="mb-3">
+      <h5>Вопросы</h5>
+      <div id="questionsContainer"></div>
+      <button type="button" class="btn btn-outline-secondary" id="addQuestionBtn">+ Добавить вопрос</button>
+    </div>
+
+    <input type="hidden" id="questionsJson" name="questions_json">
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Сохранить</button>
+      <a href="{{ url_for('templates_list') }}" class="btn btn-secondary">Отмена</a>
+    </div>
+  </form>
+
+  <style>
+    .question-card {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .question-card textarea {
+      margin-bottom: 10px;
+    }
+  </style>
+
+  <script>
+    let questionCount = 0;
+    const existingQuestions = {{ survey.questions | tojson }};
+
+    function initializeQuestions() {
+      existingQuestions.forEach((q, idx) => {
+        addQuestionCard(q.text, q.type, q.options);
+      });
+    }
+
+    function addQuestionCard(text = '', type = '', options = []) {
+      const questionId = 'q_' + questionCount++;
+      const optionsText = options.join('\n');
+      const html = `
+        <div class="question-card" id="${questionId}">
+          <div class="mb-2">
+            <label class="form-label">Текст вопроса *</label>
+            <textarea class="form-control question-text" required>${text}</textarea>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Тип ответа *</label>
+            <select class="form-select question-type" required>
+              <option value="">Выберите тип</option>
+              <option value="text" ${type === 'text' ? 'selected' : ''}>Текстовый ответ</option>
+              <option value="choice" ${type === 'choice' ? 'selected' : ''}>Одного выбора (radio)</option>
+              <option value="select" ${type === 'select' ? 'selected' : ''}>Список выбора (dropdown)</option>
+            </select>
+          </div>
+
+          <div class="options-container" style="display: ${type !== 'text' ? 'block' : 'none'};">
+            <label class="form-label">Варианты ответов (один на строку)</label>
+            <textarea class="form-control options-text" rows="4">${optionsText}</textarea>
+          </div>
+
+          <button type="button" class="btn btn-sm btn-danger delete-question-btn">Удалить</button>
+        </div>
+      `;
+      document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', html);
+
+      const card = document.getElementById(questionId);
+      const typeSelect = card.querySelector('.question-type');
+      const optionsContainer = card.querySelector('.options-container');
+
+      typeSelect.addEventListener('change', (e) => {
+        optionsContainer.style.display = (e.target.value !== 'text') ? 'block' : 'none';
+      });
+
+      card.querySelector('.delete-question-btn').addEventListener('click', () => {
+        card.remove();
+      });
+    }
+
+    document.getElementById('addQuestionBtn').addEventListener('click', () => {
+      addQuestionCard();
+    });
+
+    document.getElementById('surveyForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const cards = document.querySelectorAll('.question-card');
+      const questions = [];
+
+      let valid = true;
+      cards.forEach(card => {
+        const text = card.querySelector('.question-text').value.trim();
+        const type = card.querySelector('.question-type').value;
+        const optionsText = card.querySelector('.options-text').value.trim();
+
+        if (!text || !type) {
+          alert('Заполните все поля вопросов');
+          valid = false;
+          return;
+        }
+
+        let options = [];
+        if (type !== 'text') {
+          options = optionsText.split('\n').map(o => o.trim()).filter(o => o);
+          if (options.length === 0) {
+            alert(`Добавьте варианты ответов для вопроса: "${text}"`);
+            valid = false;
+            return;
+          }
+        }
+
+        questions.push({ text, type, options });
+      });
+
+      if (valid && questions.length > 0) {
+        document.getElementById('questionsJson').value = JSON.stringify(questions);
+        document.getElementById('surveyForm').submit();
+      } else if (valid) {
+        alert('Добавьте хотя бы один вопрос');
+      }
+    });
+
+    initializeQuestions();
+  </script>
+{% endblock %}

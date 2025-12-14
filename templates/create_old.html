@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% block content %}
+  <style>
+    .create-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 20px;
+      border-radius: 10px;
+      margin-bottom: 40px;
+    }
+    .create-header h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: bold;
+    }
+    .form-container {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    .question-card {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .question-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 2px 12px rgba(102, 126, 234, 0.2);
+    }
+    .question-card h6 {
+      color: #667eea;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .question-number {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+    .options-container {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+    .delete-question-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .form-label {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .btn-add-question {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: 0;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-add-question:hover {
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .form-actions {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+    .form-actions .btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+    }
+    .back-button {
+      margin-bottom: 20px;
+    }
+  </style>
+
+  <div class="back-button">
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">← Вернуться в меню</a>
+  </div>
+
+  <div class="create-header">
+    <h1>✏️ Создать новый опрос</h1>
+    <p style="margin: 0; opacity: 0.9; margin-top: 10px;">Заполните информацию и добавьте вопросы различных типов</p>
+  </div>
+
+  <div class="form-container">
+    <form id="surveyForm" method="post">
+      <div class="mb-4">
+        <label class="form-label">🎯 Тема опроса *</label>
+        <input class="form-control form-control-lg" name="topic" placeholder="Например: Обратная связь по курсу" required>
+        <small class="form-text text-muted">Категория или область, к которой относится опрос</small>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">📝 Название опроса *</label>
+        <input class="form-control form-control-lg" name="title" placeholder="Введите точное название" required>
+        <small class="form-text text-muted">Будет отображаться как основной заголовок</small>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">📋 Описание (опционально)</label>
+        <textarea class="form-control" name="description" rows="3" placeholder="Опишите цель опроса и дополнительную информацию..."></textarea>
+        <small class="form-text text-muted">Помогает респондентам понять контекст опроса</small>
+      </div>
+
+      <hr>
+
+      <h5 class="mt-4 mb-3">
+        <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+          ❓ Вопросы опроса
+        </span>
+      </h5>
+
+      <div id="questionsContainer"></div>
+
+      <button type="button" class="btn btn-add-question" id="addQuestionBtn">
+        + Добавить вопрос
+      </button>
+
+      <input type="hidden" id="questionsJson" name="questions_json">
+
+      <div class="form-actions">
+        <button class="btn btn-primary btn-lg" type="submit">✓ Создать опрос</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">Отмена</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    let questionCount = 0;
+
+    function addQuestionCard(text = '', type = '', options = []) {
+      const questionId = 'q_' + questionCount++;
+      const optionsText = options.join('\n');
+      const html = `
+        <div class="question-card" id="${questionId}">
+          <button type="button" class="btn btn-sm btn-danger delete-question-btn">✕</button>
+          <h6><span class="question-number">${questionCount}</span> Вопрос ${questionCount}</h6>
+          
+          <div class="mb-3">
+            <label class="form-label">Текст вопроса *</label>
+            <textarea class="form-control question-text" placeholder="Введите текст вопроса..." required>${text}</textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Тип ответа *</label>
+            <select class="form-select question-type" required>
+              <option value="">Выберите тип ответа</option>
+              <option value="text" ${type === 'text' ? 'selected' : ''}>📝 Текстовый ответ (свободный текст)</option>
+              <option value="choice" ${type === 'choice' ? 'selected' : ''}>🔘 Одного выбора (радиокнопки)</option>
+              <option value="select" ${type === 'select' ? 'selected' : ''}>📋 Список выбора (выпадающий список)</option>
+            </select>
+          </div>
+
+          <div class="options-container" style="display: ${type !== 'text' ? 'block' : 'none'};">
+            <label class="form-label">Варианты ответов *</label>
+            <textarea class="form-control options-text" rows="4" placeholder="Введите варианты (по одному на строку)&#10;Например:&#10;Отлично&#10;Хорошо&#10;Удовлетворительно&#10;Плохо">${optionsText}</textarea>
+            <small class="form-text text-muted d-block mt-2">Введите каждый вариант ответа на новой строке</small>
+          </div>
+        </div>
+      `;
+      document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', html);
+
+      const card = document.getElementById(questionId);
+      const typeSelect = card.querySelector('.question-type');
+      const optionsContainer = card.querySelector('.options-container');
+
+      typeSelect.addEventListener('change', (e) => {
+        optionsContainer.style.display = (e.target.value !== 'text') ? 'block' : 'none';
+      });
+
+      card.querySelector('.delete-question-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        card.remove();
+        updateQuestionNumbers();
+      });
+    }
+
+    function updateQuestionNumbers() {
+      document.querySelectorAll('.question-number').forEach((el, idx) => {
+        el.textContent = idx + 1;
+      });
+      document.querySelectorAll('h6').forEach((el, idx) => {
+        el.innerHTML = `<span class="question-number">${idx + 1}</span> Вопрос ${idx + 1}`;
+      });
+    }
+
+    document.getElementById('addQuestionBtn').addEventListener('click', () => {
+      addQuestionCard();
+      updateQuestionNumbers();
+    });
+
+    document.getElementById('surveyForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const cards = document.querySelectorAll('.question-card');
+      const questions = [];
+
+      let valid = true;
+      cards.forEach((card, idx) => {
+        const text = card.querySelector('.question-text').value.trim();
+        const type = card.querySelector('.question-type').value;
+        const optionsText = card.querySelector('.options-text').value.trim();
+
+        if (!text || !type) {
+          alert(`Заполните все поля для вопроса ${idx + 1}`);
+          valid = false;
+          return;
+        }
+
+        let options = [];
+        if (type !== 'text') {
+          options = optionsText.split('\n').map(o => o.trim()).filter(o => o);
+          if (options.length === 0) {
+            alert(`Добавьте варианты ответов для вопроса ${idx + 1}: "${text}"`);
+            valid = false;
+            return;
+          }
+        }
+
+        questions.push({ text, type, options });
+      });
+
+      if (valid && questions.length > 0) {
+        document.getElementById('questionsJson').value = JSON.stringify(questions);
+        document.getElementById('surveyForm').submit();
+      } else if (valid) {
+        alert('Добавьте хотя бы один вопрос');
+      }
+    });
+  </script>
+{% endblock %}

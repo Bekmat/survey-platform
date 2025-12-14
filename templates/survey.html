@@ -1,13 +1,121 @@
-{% extends 'base.html' %}
-{% block content %}
-  <h1>{{ survey.title }}</h1>
-  <form method="post">
-    {% for q in survey.questions %}
-      <div class="mb-3">
-        <label class="form-label">{{ loop.index }}. {{ q }}</label>
-        <input class="form-control" name="q{{ loop.index0 }}" autocomplete="off">
+{% extends 'base.html' %} {% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <h1 class="text-center mb-4">{{ survey.title }}</h1>
+      <div class="text-center mb-4">
+        <button class="btn btn-outline-secondary" onclick="shareSurvey()">
+          <i class="fas fa-share-alt"></i> Поделиться опросом
+        </button>
       </div>
-    {% endfor %}
-    <button class="btn btn-success" type="submit">Отправить</button>
-  </form>
+      <form method="post">
+        {% for q in survey.questions %}
+        <div class="card mb-4 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-start mb-3">
+              <div
+                class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                style="
+                  width: 30px;
+                  height: 30px;
+                  font-size: 14px;
+                  margin-right: 15px;
+                "
+              >
+                {{ loop.index }}
+              </div>
+              <div class="flex-grow-1">
+                <h5 class="card-title mb-3">{{ q.text }}</h5>
+                {% if q.type == 'text' %}
+                <input
+                  class="form-control form-control-lg"
+                  name="q{{ loop.index0 }}"
+                  autocomplete="off"
+                  placeholder="Ваш ответ"
+                />
+                {% elif q.type == 'radio' %}
+                <div class="row">
+                  {% for option in q.options %}
+                  <div class="col-12 mb-2">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="radio"
+                        name="q{{ loop.index0 }}"
+                        value="{{ option }}"
+                        id="q{{ loop.index0 }}_{{ loop.index }}"
+                        style="transform: scale(1.2)"
+                      />
+                      <label
+                        class="form-check-label ms-2"
+                        for="q{{ loop.index0 }}_{{ loop.index }}"
+                        style="font-size: 16px"
+                      >
+                        {{ option }}
+                      </label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% elif q.type == 'checkbox' %}
+                <div class="row">
+                  {% for option in q.options %}
+                  <div class="col-12 mb-2">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="q{{ loop.index0 }}"
+                        value="{{ option }}"
+                        id="q{{ loop.index0 }}_{{ loop.index }}"
+                        style="transform: scale(1.2)"
+                      />
+                      <label
+                        class="form-check-label ms-2"
+                        for="q{{ loop.index0 }}_{{ loop.index }}"
+                        style="font-size: 16px"
+                      >
+                        {{ option }}
+                      </label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="text-center">
+          <button class="btn btn-success btn-lg px-5" type="submit">
+            <i class="fas fa-paper-plane"></i> Отправить
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function shareSurvey() {
+    const url = window.location.href;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        alert("Ссылка на опрос скопирована в буфер обмена!");
+      })
+      .catch((err) => {
+        console.error("Ошибка копирования: ", err);
+        // Fallback: select text
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        alert("Ссылка на опрос скопирована в буфер обмена!");
+      });
+  }
+</script>
 {% endblock %}

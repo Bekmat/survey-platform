@@ -1,0 +1,39 @@
+{% extends 'base.html' %} {% block content %}
+<h1>Результаты опроса: {{ survey.title }}</h1>
+<p>Всего ответов: {{ survey.responses|length }}</p>
+
+{% if table_html %}
+<div class="mb-3">
+  <a
+    href="{{ url_for('survey_results', survey_id=survey_id) }}"
+    class="btn btn-info"
+    ><i class="fas fa-chart-pie"></i> Показать анализ и графики</a
+  >
+  <a
+    href="{{ url_for('download_excel', survey_id=survey_id) }}"
+    class="btn btn-success ms-2"
+    ><i class="fas fa-download"></i> Скачать Excel</a
+  >
+</div>
+<div class="table-responsive">{{ table_html|safe }}</div>
+<p><strong>Легенда:</strong></p>
+<ul>
+  {% for col, q in q_map.items() %}
+  <li><strong>{{ col }}</strong>: {{ q }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>Пока нет ответов.</p>
+{% endif %} {% endblock %}
+
+<script>
+  $(document).ready(function () {
+    $("#resultsTable").DataTable({
+      language: {
+        url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/ru.json",
+      },
+      pageLength: 10,
+      responsive: true,
+    });
+  });
+</script>
